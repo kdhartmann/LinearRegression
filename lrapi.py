@@ -190,9 +190,15 @@ def lowestMSEByFeatureCount():
 		Kfit = KBest.fit_transform(XScaled, y)
 		column_names = np.array(XScaled.columns[KBest.get_support()])
 		MSE = (cross_val_score(reg, Kfit, y, cv=cv, scoring='neg_mean_squared_error'))*-1
+		outputString = ''
+		for elem in column_names:
+			if len(outputString) == 0:
+				outputString += elem
+			else:
+				outputString += (f", {elem}")
 		numFeatList.append(numFeat)
 		mseList.append(np.mean(MSE))
-		features.append(column_names)
+		features.append(outputString)
 		numFeat+=1
 	df = pd.DataFrame()
 	df['numFeat'] = numFeatList
