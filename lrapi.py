@@ -93,8 +93,9 @@ app = Flask(__name__)
 
 @app.route('/linearResultsUnscaled')
 def linearResultsUnscaled():
-	reg.fit(X, y)
-	results = getResultsDFNoSort(reg, np.array(X.columns))
+	linUnscaledX = X[['lotSize', 'age', 'bathrooms']]
+	reg.fit(linUnscaledX, y)
+	results = getResultsDFNoSort(reg, np.array(linUnscaledX.columns))
 	results_json = results.to_json(orient='records')
 	return results_json
 
