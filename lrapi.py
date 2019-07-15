@@ -78,6 +78,14 @@ def getResultsDF(model, features):
 app = Flask(__name__)
 
 ## APIs
+
+@app.route('/linearResultsUnscaled')
+def linearResultsUnscaled():
+	reg.fit(X, y)
+	results = getResultsDF(reg, np.array(X.columns))
+	results_json = results.to_json(orient='records')
+	return results_json
+
 @app.route('/roomsUnscaled')
 def roomsUnscaled():
 	rooms = X[['rooms']]
