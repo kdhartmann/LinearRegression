@@ -74,6 +74,18 @@ def getResultsDF(model, features):
     df['coef'] = coefs
     return df.reindex(df.coef.abs().sort_values(ascending = False).index)
 
+def getResultsDFNoSort(model, features):
+    df = pd.DataFrame()
+    names = ['intercept']
+    coefs = [model.intercept_]
+    for elem in features:
+        names.append(elem)
+    for elem in model.coef_:
+        coefs.append(elem)
+    df['feature'] = names
+    df['coef'] = coefs
+    return df
+
 
 app = Flask(__name__)
 
@@ -82,7 +94,7 @@ app = Flask(__name__)
 @app.route('/linearResultsUnscaled')
 def linearResultsUnscaled():
 	reg.fit(X, y)
-	results = getResultsDF(reg, np.array(X.columns))
+	results = getResultsDFNoSort(reg, np.array(X.columns))
 	results_json = results.to_json(orient='records')
 	return results_json
 
