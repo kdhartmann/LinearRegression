@@ -77,11 +77,11 @@ def getResultsDF(model, features):
 def getResultsDFNoSort(model, features):
     df = pd.DataFrame()
     names = ['intercept']
-    coefs = [model.intercept_]
+    coefs = [round(model.intercept_,2)]
     for elem in features:
         names.append(elem)
     for elem in model.coef_:
-        coefs.append(elem)
+        coefs.append(round(elem,2))
     df['feature'] = names
     df['coef'] = coefs
     return df
