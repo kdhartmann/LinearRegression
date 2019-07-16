@@ -7,7 +7,7 @@ from sklearn.model_selection import KFold
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LinearRegression, Lasso, Ridge
 from sklearn.model_selection import cross_val_score, train_test_split
-from sklearn.feature_selection import SelectKBest, f_regression
+from sklearn.feature_selection import SelectKBest, f_classif
 
 # pre-processing
 dataset = pd.read_csv('https://raw.githubusercontent.com/kdhartmann/LinearModels/master/SaratogaHousesClean.csv')
@@ -186,7 +186,7 @@ def lowestMSEByFeatureCount():
 	mseList = []
 	features = []
 	while numFeat <= 8:
-		KBest = SelectKBest(f_regression, k=numFeat)
+		KBest = SelectKBest(f_classif, k=numFeat)
 		Kfit = KBest.fit_transform(XScaled, y)
 		column_names = np.array(XScaled.columns[KBest.get_support()])
 		MSE = (cross_val_score(reg, Kfit, y, cv=cv, scoring='neg_mean_squared_error'))*-1
