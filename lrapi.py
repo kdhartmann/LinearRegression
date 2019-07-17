@@ -7,7 +7,7 @@ from sklearn.model_selection import KFold
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LinearRegression, Lasso, Ridge
 from sklearn.model_selection import cross_val_score, train_test_split
-from sklearn.feature_selection import SelectKBest, f_classif
+from sklearn.feature_selection import SelectKBest, f_regression
 
 # pre-processing
 dataset = pd.read_csv('https://raw.githubusercontent.com/kdhartmann/LinearModels/master/SaratogaHousesClean.csv')
@@ -85,6 +85,21 @@ def getResultsDFNoSort(model, features):
     df['feature'] = names
     df['coef'] = coefs
     return df
+
+def findNextFeat(featIncluded, featExcluded):
+    mseList = []
+    global XScaled
+    for elem in featExcluded:
+        feats1 = featIncluded.tolist()
+        feats1.append(elem)
+        XFeats = XScaled[feats1]
+        MSE = np.mean((cross_val_score(reg, XFeats, y, cv=cv, scoring='neg_mean_squared_error'))*-1)
+        mseList.append(MSE)
+    lowestMSE = min(mseList)
+    lowestIndex = mseList.index(lowestMSE)
+    lowestFeat = featExcluded[lowestIndex]
+    
+    return lowestFeat, lowestMSE
 
 
 app = Flask(__name__)
@@ -181,31 +196,34 @@ def inputGraphs(selectedFeats):
 # lowest MSE for each possible number of features
 @app.route('/lowestMSEByFeatureCount')
 def lowestMSEByFeatureCount():
-	numFeat = 1
-	numFeatList = []
+	results = pd.DataFrame()
+	featureNum = 1
+	feats = []
+	featuresList = []
 	mseList = []
-	features = []
-	while numFeat <= 8:
-		KBest = SelectKBest(f_classif, k=numFeat)
-		Kfit = KBest.fit_transform(XScaled, y)
-		column_names = np.array(XScaled.columns[KBest.get_support()])
-		MSE = (cross_val_score(reg, Kfit, y, cv=cv, scoring='neg_mean_squared_error'))*-1
+	numFeatList = []
+	potentialFeats = XScaled.columns
+	while featureNum <= 8:
+		feats = np.asarray(feats)
+		featsExcluded = np.setdiff1d(potentialFeats, feats)
+		featsExported, lowestMSE = findNextFeat(feats, featsExcluded)  
+		feats = np.append(feats,featsExported)
 		outputString = ''
-		for elem in column_names:
+		for elem in feats:
 			if len(outputString) == 0:
 				outputString += elem
 			else:
 				outputString += (f", {elem}")
-		numFeatList.append(numFeat)
-		mseList.append(np.mean(MSE))
-		features.append(outputString)
-		numFeat+=1
-	df = pd.DataFrame()
-	df['numFeat'] = numFeatList
-	df['mse'] = mseList
-	df['features'] = features
-	df_json = df.to_json(orient='records')
-	return df_json
+		featuresList.append(outputString)
+		mseList.append(lowestMSE)
+		numFeatList.append(feats.shape[0])
+		featureNum += 1
+    
+	results['numFeat'] = numFeatList
+	results['mse'] = mseList
+	results['features'] = featuresList
+	results_json = results.to_json(orient='records')
+	return results_json
 
 @app.route('/linearResults')
 def linearResults():
