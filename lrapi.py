@@ -16,7 +16,8 @@ X = dataset.iloc[:, 1:9]
 
 scaler = StandardScaler()
 cv = KFold(n_splits=5, shuffle=False)
-reg = LinearRegression(fit_intercept = True)
+regIntercept = LinearRegression(fit_intercept = True)
+reg = LinearRegression(fit_intercept = False)
 
 # scaling the features 
 XScaleTransform = scaler.fit_transform(X)
@@ -64,8 +65,8 @@ inputGraphResults = pd.DataFrame(columns = ['model', 'numFeat', 'mse', 'selected
 # function to get dataframe of regression results: coefficients and features
 def getResultsDF(model, features):
     df = pd.DataFrame()
-    names = ['intercept']
-    coefs = [model.intercept_]
+    names = []
+    coefs = []
     for elem in features:
         names.append(elem)
     for elem in model.coef_:
@@ -109,8 +110,8 @@ app = Flask(__name__)
 @app.route('/linearResultsUnscaled')
 def linearResultsUnscaled():
 	linUnscaledX = X[['lotSize', 'age', 'bathrooms']]
-	reg.fit(linUnscaledX, y)
-	results = getResultsDFNoSort(reg, np.array(linUnscaledX.columns))
+	regIntercept.fit(linUnscaledX, y)
+	results = getResultsDFNoSort(regIntercept, np.array(linUnscaledX.columns))
 	results_json = results.to_json(orient='records')
 	return results_json
 
