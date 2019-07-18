@@ -10,6 +10,8 @@ from sklearn.model_selection import cross_val_score, train_test_split
 from sklearn.feature_selection import SelectKBest, f_regression
 
 
+app = Flask(__name__)
+
 # function to get dataframe of regression results: coefficients and features
 # no intercept with sorting 
 def getResultsDF(model, features):
@@ -43,9 +45,9 @@ def findNextFeat(featIncluded, featExcluded):
     mseList = []
     global XScaled
     for elem in featExcluded:
-        feats1 = featIncluded.tolist()
-        feats1.append(elem)
-        XFeats = XScaled[feats1]
+        featsList = featIncluded.tolist()
+        featsList.append(elem)
+        XFeats = XScaled[featsList]
         MSE = np.mean((cross_val_score(reg, XFeats, y, cv=cv, scoring='neg_mean_squared_error'))*-1)
         mseList.append(MSE)
     lowestMSE = min(mseList)
@@ -105,7 +107,7 @@ for train_index, test_index in cv.split(livingArea):
 
 # Finds Lowest MSE for each Feature Number
 featureNum = 1
-feats = []
+featsIncluded = []
 featuresList = []
 mseListLowest = []
 numFeatList = []
@@ -113,31 +115,29 @@ potentialFeats = XScaled.columns
 # loops through each possible number of features
 while featureNum <= 8:
 	# features used
-	feats = np.asarray(feats)
+	featsIncluded = np.asarray(featsIncluded)
 	# finds features that aren't used yet 
-	featsExcluded = np.setdiff1d(potentialFeats, feats)
+	featsExcluded = np.setdiff1d(potentialFeats, featsIncluded)
 	# function returns next feature and the MSE
-	featsExported, lowestMSE = findNextFeat(feats, featsExcluded) 
+	featsExported, lowestMSE = findNextFeat(featsIncluded, featsExcluded) 
 	# add the next feature to the array of used features 
-	feats = np.append(feats,featsExported)
+	featsIncluded = np.append(featsIncluded,featsExported)
 	# format list into string of features 
-	outputString = ''
-	for elem in feats:
-		if len(outputString) == 0:
-			outputString += elem
+	featsIncludedString = ''
+	for elem in featsIncluded:
+		if len(featsIncludedString) == 0:
+			featsIncludedString += elem
 		else:
-			outputString += (f", {elem}")
+			featsIncludedString += (f", {elem}")
 	# append results to lists 
-	featuresList.append(outputString)
+	featuresList.append(featsIncludedString)
 	mseListLowest.append(lowestMSE)
-	numFeatList.append(feats.shape[0])
+	numFeatList.append(featsIncluded.shape[0])
 	featureNum += 1
 
 # create the dataframe for the user input graph results 
 inputGraphResults = pd.DataFrame(columns = ['model', 'numFeat', 'mse', 'selectedFeat'])
 
-
-app = Flask(__name__)
 
 ## APIs
 
@@ -145,7 +145,9 @@ app = Flask(__name__)
 # same input as linearResultsScaled
 @app.route('/linearResultsUnscaled/<features>')
 def linearResultsUnscaled(features):
+	# creates a list of features
 	features = features.split(",")
+	# get data, fit regression with intercept, get df of results
 	XlinUnscaled = X[features]
 	regIntercept.fit(XlinUnscaled, y)
 	results = getResultsDFIntercept(regIntercept, np.array(XlinUnscaled.columns))
@@ -156,7 +158,9 @@ def linearResultsUnscaled(features):
 # same input as linearResultsUnscaled
 @app.route('/linearResultsScaled/<features>')
 def linearResultsScaled(features):
+	# creates list of features
 	features = features.split(",")
+	# get data, fit regression, get df of results
 	XlinScaled = X[features]
 	reg.fit(XlinScaled, y)
 	results = getResultsDF(reg, np.array(XlinScaled.columns))
@@ -279,8 +283,8 @@ def featureSelectionResults(numFeat):
 		featNamesStr+=elem
     # list of feature names 
 	featNames = featNamesStr.split(',')
+	# trim spaces off names
 	i = 0
-	# trim white space off names
 	while i < len(featNames):
 		feat = featNames[i]
 		featNames[i] = feat.strip()
