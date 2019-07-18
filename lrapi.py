@@ -1,5 +1,5 @@
 from flask import Flask 
-# from flask_cors import CORS
+from flask_cors import CORS
 import json
 import pandas as pd
 import numpy as np
@@ -12,14 +12,14 @@ from sklearn.feature_selection import SelectKBest, f_regression
 
 
 app = Flask(__name__)
-# CORS(app)
+CORS(app)
 
 # function to get dataframe of regression results: coefficients and features
 # no intercept with sorting 
 def getResultsDF(model, features):
     df = pd.DataFrame()
-    names = []
-    coefs = []
+    names = ['intercept']
+    coefs = [round(model.intercept_,2)]
     for elem in features:
         names.append(elem)
     for elem in model.coef_:
@@ -30,7 +30,7 @@ def getResultsDF(model, features):
 
 # function to get dataframe of regression results: coefficients and features
 # intercept without sorting 
-def getResultsDFIntercept(model, features):
+def getResultsDFNoSort(model, features):
     df = pd.DataFrame()
     names = ['intercept']
     coefs = [round(model.intercept_,2)]
@@ -65,8 +65,7 @@ X = dataset.iloc[:, 1:9]
 
 scaler = StandardScaler()
 cv = KFold(n_splits=5, shuffle=False)
-regIntercept = LinearRegression(fit_intercept = True)
-reg = LinearRegression(fit_intercept = False)
+reg = LinearRegression(fit_intercept = True)
 
 # scaling the features 
 XScaleTransform = scaler.fit_transform(X)
@@ -151,8 +150,8 @@ def linearResultsUnscaled(features):
 	features = features.split(",")
 	# get data, fit regression with intercept, get df of results
 	XlinUnscaled = X[features]
-	regIntercept.fit(XlinUnscaled, y)
-	results = getResultsDFIntercept(regIntercept, np.array(XlinUnscaled.columns))
+	reg.fit(XlinUnscaled, y)
+	results = getResultsDFNoSort(reg, np.array(XlinUnscaled.columns))
 	results_json = results.to_json(orient='records')
 	return results_json
 
@@ -165,7 +164,7 @@ def linearResultsScaled(features):
 	# get data, fit regression, get df of results
 	XlinScaled = X[features]
 	reg.fit(XlinScaled, y)
-	results = getResultsDF(reg, np.array(XlinScaled.columns))
+	results = getResultsDFNoSort(reg, np.array(XlinScaled.columns))
 	results_json = results.to_json(orient='records')
 	return results_json
 
