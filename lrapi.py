@@ -1,5 +1,5 @@
 from flask import Flask 
-from flask_cors import CORS
+# from flask_cors import CORS
 import json
 import pandas as pd
 import numpy as np
@@ -12,7 +12,7 @@ from sklearn.feature_selection import SelectKBest, f_regression
 
 
 app = Flask(__name__)
-CORS(app)
+# CORS(app)
 
 # function to get dataframe of regression results: coefficients and features
 # no intercept with sorting 
