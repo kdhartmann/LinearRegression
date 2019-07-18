@@ -9,6 +9,51 @@ from sklearn.linear_model import LinearRegression, Lasso, Ridge
 from sklearn.model_selection import cross_val_score, train_test_split
 from sklearn.feature_selection import SelectKBest, f_regression
 
+
+# function to get dataframe of regression results: coefficients and features
+# no intercept with sorting 
+def getResultsDF(model, features):
+    df = pd.DataFrame()
+    names = []
+    coefs = []
+    for elem in features:
+        names.append(elem)
+    for elem in model.coef_:
+        coefs.append(round(elem,2))
+    df['feature'] = names
+    df['coef'] = coefs
+    return df.reindex(df.coef.abs().sort_values(ascending = False).index)
+
+# function to get dataframe of regression results: coefficients and features
+# intercept without sorting 
+def getResultsDFIntercept(model, features):
+    df = pd.DataFrame()
+    names = ['intercept']
+    coefs = [round(model.intercept_,2)]
+    for elem in features:
+        names.append(elem)
+    for elem in model.coef_:
+        coefs.append(round(elem,2))
+    df['feature'] = names
+    df['coef'] = coefs
+    return df
+
+# finds the next best feature in featExcluded to add to featIncluded
+def findNextFeat(featIncluded, featExcluded):
+    mseList = []
+    global XScaled
+    for elem in featExcluded:
+        feats1 = featIncluded.tolist()
+        feats1.append(elem)
+        XFeats = XScaled[feats1]
+        MSE = np.mean((cross_val_score(reg, XFeats, y, cv=cv, scoring='neg_mean_squared_error'))*-1)
+        mseList.append(MSE)
+    lowestMSE = min(mseList)
+    lowestIndex = mseList.index(lowestMSE)
+    lowestFeat = featExcluded[lowestIndex]
+    
+    return lowestFeat, lowestMSE
+
 # pre-processing
 dataset = pd.read_csv('https://raw.githubusercontent.com/kdhartmann/LinearModels/master/SaratogaHousesClean.csv')
 y = dataset['price']
@@ -58,55 +103,46 @@ for train_index, test_index in cv.split(livingArea):
 	splitList.append(split)
 	split +=1
 
+# Finds Lowest MSE for each Feature Number
+featureNum = 1
+feats = []
+featuresList = []
+mseListLowest = []
+numFeatList = []
+potentialFeats = XScaled.columns
+# loops through each possible number of features
+while featureNum <= 8:
+	# features used
+	feats = np.asarray(feats)
+	# finds features that aren't used yet 
+	featsExcluded = np.setdiff1d(potentialFeats, feats)
+	# function returns next feature and the MSE
+	featsExported, lowestMSE = findNextFeat(feats, featsExcluded) 
+	# add the next feature to the array of used features 
+	feats = np.append(feats,featsExported)
+	# format list into string of features 
+	outputString = ''
+	for elem in feats:
+		if len(outputString) == 0:
+			outputString += elem
+		else:
+			outputString += (f", {elem}")
+	# append results to lists 
+	featuresList.append(outputString)
+	mseListLowest.append(lowestMSE)
+	numFeatList.append(feats.shape[0])
+	featureNum += 1
+
 # create the dataframe for the user input graph results 
 inputGraphResults = pd.DataFrame(columns = ['model', 'numFeat', 'mse', 'selectedFeat'])
-
-
-# function to get dataframe of regression results: coefficients and features
-def getResultsDF(model, features):
-    df = pd.DataFrame()
-    names = []
-    coefs = []
-    for elem in features:
-        names.append(elem)
-    for elem in model.coef_:
-        coefs.append(elem)
-    df['feature'] = names
-    df['coef'] = coefs
-    return df.reindex(df.coef.abs().sort_values(ascending = False).index)
-
-def getResultsDFIntercept(model, features):
-    df = pd.DataFrame()
-    names = ['intercept']
-    coefs = [round(model.intercept_,2)]
-    for elem in features:
-        names.append(elem)
-    for elem in model.coef_:
-        coefs.append(round(elem,2))
-    df['feature'] = names
-    df['coef'] = coefs
-    return df
-
-def findNextFeat(featIncluded, featExcluded):
-    mseList = []
-    global XScaled
-    for elem in featExcluded:
-        feats1 = featIncluded.tolist()
-        feats1.append(elem)
-        XFeats = XScaled[feats1]
-        MSE = np.mean((cross_val_score(reg, XFeats, y, cv=cv, scoring='neg_mean_squared_error'))*-1)
-        mseList.append(MSE)
-    lowestMSE = min(mseList)
-    lowestIndex = mseList.index(lowestMSE)
-    lowestFeat = featExcluded[lowestIndex]
-    
-    return lowestFeat, lowestMSE
 
 
 app = Flask(__name__)
 
 ## APIs
 
+# regression results for unscaled features
+# same input as linearResultsScaled
 @app.route('/linearResultsUnscaled/<features>')
 def linearResultsUnscaled(features):
 	features = features.split(",")
@@ -116,6 +152,8 @@ def linearResultsUnscaled(features):
 	results_json = results.to_json(orient='records')
 	return results_json
 
+# regression results for scaled features
+# same input as linearResultsUnscaled
 @app.route('/linearResultsScaled/<features>')
 def linearResultsScaled(features):
 	features = features.split(",")
@@ -125,19 +163,21 @@ def linearResultsScaled(features):
 	results_json = results.to_json(orient='records')
 	return results_json
 
+# returns rooms unscaled
 @app.route('/roomsUnscaled')
 def roomsUnscaled():
 	rooms = X[['rooms']]
 	rooms_json = rooms.to_json(orient='records')
 	return rooms_json
 
+# returns rooms scaled 
 @app.route('/roomsScaled')
 def roomsScaled():
 	roomsScaled = XScaled[['rooms']]
 	roomsScaled_json = roomsScaled.to_json(orient='records')
 	return roomsScaled_json
 
-# MSE from single train-test split
+# returns MSE from single train-test split
 @app.route('/trainTestSplitMSE')
 def trainTestSplitMSE():
 	livingArea = XScaled[['livingArea']]
@@ -149,7 +189,7 @@ def trainTestSplitMSE():
 	trainTestMSE_json = json.dumps(trainTestMSE_dict)
 	return trainTestMSE_json
 
-# dataframe of MSEs for the folds 
+# returns dataframe of MSEs for all the folds that were calculated for mseList
 @app.route('/kfoldmse')
 def kfoldmse():
 	results = pd.DataFrame()
@@ -158,7 +198,7 @@ def kfoldmse():
 	results_json = results.to_json(orient='records')
 	return results_json
 
-# gives the train data for a specified fold
+# gives the train data for a specified fold from (X/y)trainList
 @app.route('/kfoldTrain/<fold>')
 def kfoldTrain(fold):
 	fold = int(fold)
@@ -168,7 +208,7 @@ def kfoldTrain(fold):
 	train_json = trainDF.to_json(orient='records')
 	return train_json
 
-# gives test data for a specified fold
+# gives test data for a specified fold from (X/y)testList
 @app.route('/kfoldTest/<fold>')
 def kfoldTest(fold):
 	fold = int(fold)
@@ -184,7 +224,7 @@ def inputGraphs(selectedFeats):
 	selectedFeats = selectedFeats.split(",")
 	numFeat = len(selectedFeats)
 	selectedFeatDF = pd.DataFrame()
-	# create correctly structured string of features selected
+	# creates correctly structured string of features selected
 	outputString = ''
 	for elem in selectedFeats:
 		selectedFeatDF[elem] = XScaled[elem]
@@ -204,38 +244,18 @@ def inputGraphs(selectedFeats):
 	inputGraphResults_json = inputGraphResults.to_json(orient='records')
 	return inputGraphResults_json
 
-# lowest MSE for each possible number of features
+# returns the lowest MSE for each possible number of features
 @app.route('/lowestMSEByFeatureCount')
 def lowestMSEByFeatureCount():
 	results = pd.DataFrame()
-	featureNum = 1
-	feats = []
-	featuresList = []
-	mseList = []
-	numFeatList = []
-	potentialFeats = XScaled.columns
-	while featureNum <= 8:
-		feats = np.asarray(feats)
-		featsExcluded = np.setdiff1d(potentialFeats, feats)
-		featsExported, lowestMSE = findNextFeat(feats, featsExcluded)  
-		feats = np.append(feats,featsExported)
-		outputString = ''
-		for elem in feats:
-			if len(outputString) == 0:
-				outputString += elem
-			else:
-				outputString += (f", {elem}")
-		featuresList.append(outputString)
-		mseList.append(lowestMSE)
-		numFeatList.append(feats.shape[0])
-		featureNum += 1
-    
+    # append lists to results dataframe 
 	results['numFeat'] = numFeatList
-	results['mse'] = mseList
+	results['mse'] = mseListLowest
 	results['features'] = featuresList
 	results_json = results.to_json(orient='records')
 	return results_json
 
+# linear results for all scaled feature variables 
 @app.route('/linearResults')
 def linearResults():
 	reg.fit(XScaled, y)
@@ -243,17 +263,36 @@ def linearResults():
 	results_json = results.to_json(orient='records')
 	return results_json
 
+# returns regression results for number of features to include
 @app.route('/featureSelectionResults/<numFeat>')
 def featureSelectionResults(numFeat):
 	numFeat = int(numFeat)
-	KBest = SelectKBest(f_regression, k=numFeat)
-	Kfit = KBest.fit_transform(XScaled, y)
-	column_names = np.array(XScaled.columns[KBest.get_support()])
-	reg.fit(Kfit,y)
-	results = getResultsDF(reg, column_names)
+	results = pd.DataFrame()
+	# append lists to results dataframe 
+	results['numFeat'] = numFeatList
+	results['mse'] = mseListLowest
+	results['features'] = featuresList
+	numFeatRow = results.loc[results['numFeat'] == numFeat]
+	# get string of feature names 
+	featNamesStr = ''
+	for elem in numFeatRow['features']:
+		featNamesStr+=elem
+    # list of feature names 
+	featNames = featNamesStr.split(',')
+	i = 0
+	# trim white space off names
+	while i < len(featNames):
+		feat = featNames[i]
+		featNames[i] = feat.strip()
+		i +=1
+    # get data for each feature and run regression 
+	XNumFeat = XScaled[featNames]
+	reg.fit(XNumFeat,y)
+	results = getResultsDF(reg, featNames)
 	results_json = results.to_json(orient='records')
 	return results_json
 
+# lasso results for given lambda value
 @app.route('/lassoResults/<_lambda>')
 def lassoResults(_lambda):
 	_lambda = float(_lambda)
@@ -263,6 +302,7 @@ def lassoResults(_lambda):
 	results_json = results.to_json(orient='records')
 	return results_json
 
+# ridge results for given lambda value
 @app.route('/ridgeResults/<_lambda>')
 def ridgeResults(_lambda):
 	_lambda = float(_lambda)
