@@ -75,7 +75,7 @@ def getResultsDF(model, features):
     df['coef'] = coefs
     return df.reindex(df.coef.abs().sort_values(ascending = False).index)
 
-def getResultsDFNoSort(model, features):
+def getResultsDFIntercept(model, features):
     df = pd.DataFrame()
     names = ['intercept']
     coefs = [round(model.intercept_,2)]
@@ -107,11 +107,21 @@ app = Flask(__name__)
 
 ## APIs
 
-@app.route('/linearResultsUnscaled')
-def linearResultsUnscaled():
-	linUnscaledX = X[['lotSize', 'age', 'bathrooms']]
-	regIntercept.fit(linUnscaledX, y)
-	results = getResultsDFNoSort(regIntercept, np.array(linUnscaledX.columns))
+@app.route('/linearResultsUnscaled/<features>')
+def linearResultsUnscaled(features):
+	features = features.split(",")
+	XlinUnscaled = X[features]
+	regIntercept.fit(XlinUnscaled, y)
+	results = getResultsDFIntercept(regIntercept, np.array(XlinUnscaled.columns))
+	results_json = results.to_json(orient='records')
+	return results_json
+
+@app.route('/linearResultsScaled/<features>')
+def linearResultsScaled(features):
+	features = features.split(",")
+	XlinScaled = X[features]
+	reg.fit(XlinScaled, y)
+	results = getResultsDF(reg, np.array(XlinScaled.columns))
 	results_json = results.to_json(orient='records')
 	return results_json
 
