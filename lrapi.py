@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 import json
 import pandas as pd
@@ -168,19 +168,17 @@ def linearResultsScaled(features):
 	results_json = results.to_dict(orient='records')
 	return jsonify(results_json)
 
-# returns rooms unscaled
-@app.route('/roomsUnscaled')
-def roomsUnscaled():
-	rooms = X[['rooms']]
-	rooms_json = rooms.to_dict(orient='records')
-	return jsonify(rooms_json)
+@app.route('/rooms', methods=['GET'])
+def rooms():
 
-# returns rooms scaled 
-@app.route('/roomsScaled')
-def roomsScaled():
-	roomsScaled = XScaled[['rooms']]
-	roomsScaled_json = roomsScaled.to_dict(orient='records')
-	return jsonify(roomsScaled_json)
+	if request.args['scale']=='scaled':
+		df = XScaled
+	elif request.args['scale']=='unscaled':
+		df = X
+
+	return jsonify(
+		df[['rooms']].to_dict(orient='records')
+	)
 
 # returns MSE from single train-test split
 @app.route('/trainTestSplitMSE')
