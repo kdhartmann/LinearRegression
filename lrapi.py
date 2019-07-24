@@ -1,4 +1,4 @@
-from flask import Flask 
+from flask import Flask, jsonify
 from flask_cors import CORS
 import json
 import pandas as pd
@@ -152,8 +152,8 @@ def linearResultsUnscaled(features):
 	XlinUnscaled = X[features]
 	reg.fit(XlinUnscaled, y)
 	results = getResultsDFNoSort(reg, np.array(XlinUnscaled.columns))
-	results_json = results.to_json(orient='records')
-	return results_json
+	results_json = results.to_dict(orient='records')
+	return jsonify(results_json)
 
 # regression results for scaled features
 # same input as linearResultsUnscaled
@@ -165,22 +165,22 @@ def linearResultsScaled(features):
 	XlinScaled = X[features]
 	reg.fit(XlinScaled, y)
 	results = getResultsDFNoSort(reg, np.array(XlinScaled.columns))
-	results_json = results.to_json(orient='records')
-	return results_json
+	results_json = results.to_dict(orient='records')
+	return jsonify(results_json)
 
 # returns rooms unscaled
 @app.route('/roomsUnscaled')
 def roomsUnscaled():
 	rooms = X[['rooms']]
-	rooms_json = rooms.to_json(orient='records')
-	return rooms_json
+	rooms_json = rooms.to_dict(orient='records')
+	return jsonify(rooms_json)
 
 # returns rooms scaled 
 @app.route('/roomsScaled')
 def roomsScaled():
 	roomsScaled = XScaled[['rooms']]
-	roomsScaled_json = roomsScaled.to_json(orient='records')
-	return roomsScaled_json
+	roomsScaled_json = roomsScaled.to_dict(orient='records')
+	return jsonify(roomsScaled_json)
 
 # returns MSE from single train-test split
 @app.route('/trainTestSplitMSE')
@@ -192,7 +192,7 @@ def trainTestSplitMSE():
 	trainTestMSE = metrics.mean_squared_error(y_test, y_pred)
 	trainTestMSE_dict = {"trainTestMSE": trainTestMSE}
 	trainTestMSE_json = json.dumps(trainTestMSE_dict)
-	return trainTestMSE_json
+	return jsonify(trainTestMSE_json)
 
 # returns dataframe of MSEs for all the folds that were calculated for mseList
 @app.route('/kfoldmse')
@@ -200,8 +200,8 @@ def kfoldmse():
 	results = pd.DataFrame()
 	results['fold'] = splitList
 	results['mse'] = mseList
-	results_json = results.to_json(orient='records')
-	return results_json
+	results_json = results.to_dict(orient='records')
+	return jsonify(results_json)
 
 # gives the train data for a specified fold from (X/y)trainList
 @app.route('/kfoldTrain/<fold>')
@@ -210,8 +210,8 @@ def kfoldTrain(fold):
 	trainDF = pd.DataFrame()
 	trainDF['XTrain'] = XTrainList[fold-1]
 	trainDF['yTrain'] = yTrainList[fold-1]
-	train_json = trainDF.to_json(orient='records')
-	return train_json
+	train_json = trainDF.to_dict(orient='records')
+	return jsonify(train_json)
 
 # gives test data for a specified fold from (X/y)testList
 @app.route('/kfoldTest/<fold>')
@@ -220,8 +220,8 @@ def kfoldTest(fold):
 	testDF = pd.DataFrame()
 	testDF['XTest'] = XTestList[fold-1]
 	testDF['yTest'] = yTestList[fold-1]
-	test_json = testDF.to_json(orient='records')
-	return test_json
+	test_json = testDF.to_dict(orient='records')
+	return jsonify(test_json)
 
 # takes in selectedFeat and concatenates results to inputGraphResults dataframe 
 @app.route('/inputGraphs/<selectedFeats>')
@@ -246,8 +246,8 @@ def inputGraphs(selectedFeats):
 	global inputGraphResults
 	toConcatDF['model'] = (inputGraphResults['selectedFeat'].shape[0] + 1)
 	inputGraphResults = pd.concat([inputGraphResults, toConcatDF], sort = True)
-	inputGraphResults_json = inputGraphResults.to_json(orient='records')
-	return inputGraphResults_json
+	inputGraphResults_json = inputGraphResults.to_dict(orient='records')
+	return jsonify(inputGraphResults_json)
 
 # returns the lowest MSE for each possible number of features
 @app.route('/lowestMSEByFeatureCount')
@@ -257,16 +257,16 @@ def lowestMSEByFeatureCount():
 	results['numFeat'] = numFeatList
 	results['mse'] = mseListLowest
 	results['features'] = featuresList
-	results_json = results.to_json(orient='records')
-	return results_json
+	results_json = results.to_dict(orient='records')
+	return jsonify(results_json)
 
 # linear results for all scaled feature variables 
 @app.route('/linearResults')
 def linearResults():
 	reg.fit(XScaled, y)
 	results = getResultsDF(reg, np.array(XScaled.columns))
-	results_json = results.to_json(orient='records')
-	return results_json
+	results_json = results.to_dict(orient='records')
+	return jsonify(results_json)
 
 # returns regression results for number of features to include
 @app.route('/featureSelectionResults/<numFeat>')
@@ -294,8 +294,8 @@ def featureSelectionResults(numFeat):
 	XNumFeat = XScaled[featNames]
 	reg.fit(XNumFeat,y)
 	results = getResultsDF(reg, featNames)
-	results_json = results.to_json(orient='records')
-	return results_json
+	results_json = results.to_dict(orient='records')
+	return jsonify(results_json)
 
 # lasso results for given lambda value
 @app.route('/lassoResults/<_lambda>')
@@ -304,8 +304,8 @@ def lassoResults(_lambda):
 	lasso = Lasso(alpha=_lambda)
 	lasso.fit(XScaled, y)
 	results = getResultsDF(lasso, np.array(XScaled.columns))
-	results_json = results.to_json(orient='records')
-	return results_json
+	results_json = results.to_dict(orient='records')
+	return jsonify(results_json)
 
 # ridge results for given lambda value
 @app.route('/ridgeResults/<_lambda>')
@@ -314,8 +314,8 @@ def ridgeResults(_lambda):
 	ridge = Ridge(alpha=_lambda)
 	ridge.fit(XScaled, y)
 	results = getResultsDF(ridge, np.array(XScaled.columns))
-	results_json = results.to_json(orient='records')
-	return results_json
+	results_json = results.to_dict(orient='records')
+	return jsonify(results_json)
 
 if __name__ == '__main__':
-    app.run(debug=False)
+    app.run(debug=True)
