@@ -168,6 +168,23 @@ def linearResultsScaled(features):
 	results_json = results.to_dict(orient='records')
 	return jsonify(results_json)
 
+@app.route('/linear_regression', methods=['POST'])
+def linear_regression():
+
+	feature_names = request.get_json()
+
+	if request.args['scale']=='scaled':
+		feature_matrix_df = XScaled[feature_names]
+
+	elif request.args['scale']=='unscaled':
+		feature_matrix_df = X[feature_names]
+
+	reg.fit(feature_matrix_df, y)
+
+	return jsonify(
+		getResultsDFNoSort(reg, feature_names).to_dict(orient='records')
+		)
+
 @app.route('/rooms', methods=['GET'])
 def rooms():
 
