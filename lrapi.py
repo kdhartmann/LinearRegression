@@ -59,7 +59,7 @@ def findNextFeat(featIncluded, featExcluded):
     return lowestFeat, lowestMSE
 
 # pre-processing
-dataset = pd.read_csv('https://raw.githubusercontent.com/kdhartmann/LinearModels/master/SaratogaHousesClean.csv')
+dataset = pd.read_csv('SaratogaHousesClean.csv')
 y = dataset['price']
 X = dataset.iloc[:, 1:9]
 
