@@ -20,18 +20,18 @@ def get_results_df_sort(model, features):
 	including the intercept; does sort by coefficient value
 	Output: dataframe consisting of 'feature' and 'coef'.
 	"""
-    df = pd.DataFrame()
-    names = ['intercept']
-    coefs = [round(model.intercept_,2)]
-    for elem in features:
-        names.append(elem)
-    for elem in model.coef_:
-        coefs.append(round(elem,2))
-    df['feature'] = names
-    df['coef'] = coefs
-    return df.reindex(
-    	df.coef.abs().sort_values(ascending = False).index
-    )
+	df = pd.DataFrame()
+	names = ['intercept']
+	coefs = [round(model.intercept_,2)]
+	for elem in features:
+		names.append(elem)
+	for elem in model.coef_:
+		coefs.append(round(elem,2))
+	df['feature'] = names
+	df['coef'] = coefs
+	return df.reindex(
+		df.coef.abs().sort_values(ascending = False).index
+	)
 
 def get_results_df(model, features):
 	"""Inputs: model (model used to fit regression) and features (list of names of features in model)
@@ -39,16 +39,16 @@ def get_results_df(model, features):
 	including the intercept; does not sort by coefficient value
 	Output: dataframe consisting of 'feature' and 'coef'.
 	"""
-    df = pd.DataFrame()
-    names = ['intercept']
-    coefs = [round(model.intercept_,2)]
-    for elem in features:
-        names.append(elem)
-    for elem in model.coef_:
-        coefs.append(round(elem,2))
-    df['feature'] = names
-    df['coef'] = coefs
-    return df
+	df = pd.DataFrame()
+	names = ['intercept']
+	coefs = [round(model.intercept_,2)]
+	for elem in features:
+		names.append(elem)
+	for elem in model.coef_:
+		coefs.append(round(elem,2))
+	df['feature'] = names
+	df['coef'] = coefs
+	return df
 
 def find_next_feat(included, excluded):
 	"""Inputs: included (features already in model) and excluded (features not in model)
@@ -56,16 +56,16 @@ def find_next_feat(included, excluded):
 	mse when it is added to the feautures already included in the model
 	Outputs: feature that produces lowest MSE and that lowest MSE value
 	"""
-    mse_list = []
-    global XScaled
-    for elem in excluded:
-        feats_list = included.tolist()
-        feats_list.append(elem)
-        mse_list.append(
-        	np.mean((cross_val_score(reg, XScaled[feats_list], y, cv=cv, scoring='neg_mean_squared_error'))*-1)
-        )
-    lowest_index = mse_list.index(min(mse_list))
-    return excluded[lowest_index], min(mse_list)
+	mse_list = []
+	global XScaled
+	for elem in excluded:
+		feats_list = included.tolist()
+		feats_list.append(elem)
+		mse_list.append(
+			np.mean((cross_val_score(reg, XScaled[feats_list], y, cv=cv, scoring='neg_mean_squared_error'))*-1)
+		)
+	lowest_index = mse_list.index(min(mse_list))
+	return excluded[lowest_index], min(mse_list)
 
 ## pre-processing
 dataset = pd.read_csv('SaratogaHousesClean.csv')
@@ -296,4 +296,4 @@ def input_graphs():
 	)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+	app.run(debug=True)
