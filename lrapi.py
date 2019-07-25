@@ -14,8 +14,12 @@ from sklearn.feature_selection import f_regression
 app = Flask(__name__)
 CORS(app)
 
-# function to get dataframe of regression results: coefficients and features with sorting 
 def get_results_df_sort(model, features):
+	"""Inputs: model (model used to fit regression) and features (list of names of features in model)
+	Creates a dataframe for feature name and coefficient associated with that feature
+	including the intercept; does sort by coefficient value
+	Output: dataframe consisting of 'feature' and 'coef'.
+	"""
     df = pd.DataFrame()
     names = ['intercept']
     coefs = [round(model.intercept_,2)]
@@ -29,8 +33,12 @@ def get_results_df_sort(model, features):
     	df.coef.abs().sort_values(ascending = False).index
     )
 
-# function to get dataframe of regression results: coefficients and features without sorting 
 def get_results_df(model, features):
+	"""Inputs: model (model used to fit regression) and features (list of names of features in model)
+	Creates a dataframe for feature name and coefficient associated with that feature
+	including the intercept; does not sort by coefficient value
+	Output: dataframe consisting of 'feature' and 'coef'.
+	"""
     df = pd.DataFrame()
     names = ['intercept']
     coefs = [round(model.intercept_,2)]
@@ -42,8 +50,12 @@ def get_results_df(model, features):
     df['coef'] = coefs
     return df
 
-# finds the next best feature in excluded to add to included
 def find_next_feat(included, excluded):
+	"""Inputs: included (features already in model) and excluded (features not in model)
+	Looks through all the excluded features and finds the one that will create the lowest
+	mse when it is added to the feautures already included in the model
+	Outputs: feature that produces lowest MSE and that lowest MSE value
+	"""
     mse_list = []
     global XScaled
     for elem in excluded:
@@ -136,15 +148,15 @@ lowest_mse_df = pd.DataFrame({
 })
 
 
-# create the dataframe for the user input graph results 
-inputGraphResults = pd.DataFrame(columns = ['model', 'numFeat', 'mse', 'selectedFeat'])
-
 
 ## APIs
 
-# linear reg results for scaled or unscaled given the features
 @app.route('/linear_regression', methods=['POST'])
 def linear_regression():
+	"""Inputs: scale (scaled or unscaled) and a json consisting of features to include in regression 
+	Runs a linear regression and creates a dataframe of the feature name and its coefficient 
+	Output: json consiting of 'feature' and 'coef'.
+	"""
 	feature_names = request.get_json()
 	if request.args['scale']=='scaled':
 		feature_matrix_df = XScaled[feature_names]
@@ -155,9 +167,13 @@ def linear_regression():
 		get_results_df(reg, feature_names).to_dict(orient='records')
 	)
 
-# returns rooms for scaled or unscaled
+
 @app.route('/rooms', methods=['GET'])
 def rooms():
+	"""Input: scale (scaled or unscaled)
+	Creates a dataframe of the scaled or unscaled verison of rooms
+	Output: json consisting of 'rooms'.
+	"""
 	if request.args['scale']=='scaled':
 		df = XScaled
 	elif request.args['scale']=='unscaled':
@@ -166,9 +182,13 @@ def rooms():
 		df[['rooms']].to_dict(orient='records')
 	)
 
-# returns dataframe of MSEs for all the folds that were calculated for mseList
+
 @app.route('/kfold_mse', methods=['GET'])
 def kfoldmse():
+	"""Input: none
+	Creates a dataframe of the mse for each fold in k-fold
+	Output: json consisting of 'fold' and 'mse'.
+	"""
 	results = pd.DataFrame({
 		'fold': split_list,
 		'mse': mse_list
@@ -177,9 +197,12 @@ def kfoldmse():
 		results.to_dict(orient='records')
 	)
 
-# returns X and y of train or test sets
 @app.route('/kfold_sets', methods=['GET'])
 def kfold_sets():
+	"""Inputs: fold_num (1, 2, 3, 4, or 5) and fold_set (train or test)
+	Creates a dataframe of the X and y train or test values for a specified fold
+	Output: json consiting of 'XTrain' and 'yTrain' or 'XTest' and 'yTest'
+	"""
 	results = pd.DataFrame()
 	fold_num = int(request.args['fold_num'])
 	if request.args['fold_set']=='train':
@@ -192,26 +215,36 @@ def kfold_sets():
 		results.to_dict(orient='records')
 	)
 
-# returns the lowest MSE for each possible number of features
 @app.route('/lowest_mse_by_count', methods=['GET'])
 def lowest_mse_by_count():
+	"""Input: none
+	Calls on dataframe that holds the lowest MSE for each number of features and the features 
+	included; elements in 'features' are previously formatted into a string and not a list
+	Output: json consisting of 'numFeat' 'mse' and 'features'.
+	"""
 	return jsonify(
 		lowest_mse_df.to_dict(orient='records')
 	)
 
-# linear results for all scaled feature variables 
 @app.route('/linear_regression_all', methods=['GET'])
 def linearResults():
+	"""Input: none
+	Runs a regression with all scaled features and creates dataframe with feature and coefficient
+	Output: json consisting of 'feature' and 'coef'.
+	"""
 	reg.fit(XScaled, y)
 	results = get_results_df_sort(reg, np.array(XScaled.columns))
 	return jsonify(
 		results.to_dict(orient='records')
 	)
 
-# returns feature selection coefficients for given number of features
-# uses lowest_mse_df and must break down the features (string) into a list
 @app.route('/feature_selection_results', methods=['GET'])
 def feature_selection_results():
+	"""Input: num_feats (number of features to include in model: 1-8)
+	Calls on the lowest_mse_df, turns 'features' from a string to a list, runs 
+	regression with those features, and creates dataframe with feature and coefficient 
+	Output: json consisting of 'feature' and 'coef'.
+	"""
 	feature_row = lowest_mse_df.loc[lowest_mse_df['numFeat'] == int(request.args['num_feats'])]
 	feature_name_string = ''
 	for elem in feature_row['features']:
@@ -227,39 +260,40 @@ def feature_selection_results():
     	get_results_df_sort(reg,feature_name_string.split(',')).to_dict(orient='records')
     )
 
-# returns lasso coefficients for given alpha 
 @app.route('/lasso_results', methods=['GET'])
 def lasso_results():
+	"""Input: alpha (alpha value for lasso regression)
+	Runs a lasso regression with given alpha and creates dataframe of feature name and coefficient
+	Ouput: json consisting of 'feature' and 'coef'.
+	"""
 	lasso = Lasso(alpha=float(request.args['alpha']))
 	lasso.fit(XScaled,y)
 	return jsonify(
 		get_results_df_sort(lasso, np.array(XScaled.columns)).to_dict(orient='records')
 	)
 
-# NEED TO FIX BELOW THIS LINE
-
-# takes in selectedFeat and concatenates results to inputGraphResults dataframe 
-@app.route('/inputGraphs/<selectedFeats>')
-def inputGraphs(selectedFeats):
-	global inputGraphResults
-	selectedFeats = selectedFeats.split(",")
-	# creates correctly structured string of features selected
-	outputString = ''
-	for elem in selectedFeats:
-		if len(outputString) == 0:
-			outputString += elem
+@app.route('input_graphs', methods=['POST'])
+def input_graphs():
+	"""Input: json consisting of features to include in regression
+	Runs linear regression with features provided, calculates mse, and converts feature names
+	into a string; elements in 'selectedFeat' are formatted to be a string
+	Output: json consisting of 'numFeat' 'mse' and 'selectedFeat'
+	"""
+	feature_names = request.get_json()
+	feature_string = ''
+	for elem in feature_names:
+		if len(feature_string) == 0:
+			feature_string += elem
 		else:
-			outputString += (f", {elem}")
-	# create df to concatenate to inputGraphResults
-	toConcatDF = pd.DataFrame({
-		'numFeat': [len(selectedFeats)],
-		'mse': [np.mean((cross_val_score(reg, XScaled[selectedFeats], y, cv=cv, scoring='neg_mean_squared_error'))*-1)],
-		'selectedFeat': [outputString],
-		'model': [(inputGraphResults['selectedFeat'].shape[0] + 1)]
-		})
-	inputGraphResults = pd.concat([inputGraphResults, toConcatDF], sort = True)
-	inputGraphResults_json = inputGraphResults.to_dict(orient='records')
-	return jsonify(inputGraphResults_json)
+			feature_string += (f", {elem}")
+	df = pd.DataFrame({
+		'numFeat': [len(feature_names)],
+		'mse': [np.mean((cross_val_score(reg, XScaled[feature_names], y, cv=cv, scoring='neg_mean_squared_error'))*-1)],
+		'selectedFeat': [feature_string]
+	})
+	return jsonify(
+		df.to_dict(orient='records')
+	)
 
 if __name__ == '__main__':
     app.run(debug=True)
