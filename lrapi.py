@@ -272,7 +272,7 @@ def lasso_results():
 		get_results_df_sort(lasso, np.array(XScaled.columns)).to_dict(orient='records')
 	)
 
-@app.route('input_graphs', methods=['POST'])
+@app.route('/input_graphs', methods=['POST'])
 def input_graphs():
 	"""Input: json consisting of features to include in regression
 	Runs linear regression with features provided, calculates mse, and converts feature names
