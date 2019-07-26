@@ -150,6 +150,9 @@ lowest_mse_df = pd.DataFrame({
 
 
 ## APIs
+@app.route('/')
+def home():
+	return jsonify({'message': 'This is an api.'})
 
 @app.route('/linear_regression', methods=['POST'])
 def linear_regression():
@@ -157,7 +160,10 @@ def linear_regression():
 	Runs a linear regression and creates a dataframe of the feature name and its coefficient 
 	Output: json consiting of 'feature' and 'coef'.
 	"""
-	feature_names = request.get_json()
+
+	features_json = request.get_json()
+	feature_names = features_json['features']
+
 	if request.args['scale']=='scaled':
 		feature_matrix_df = XScaled[feature_names]
 	elif request.args['scale']=='unscaled':
