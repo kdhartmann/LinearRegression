@@ -1,1 +1,1 @@
-web: gunicorn --pythonpath app lrapi
+web: gunicorn --pythonpath app lrapi:app
