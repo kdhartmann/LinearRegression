@@ -68,7 +68,7 @@ def find_next_feat(included, excluded):
 	return excluded[lowest_index], min(mse_list)
 
 ## pre-processing
-dataset = pd.read_csv('SaratogaHousesClean.csv')
+dataset = pd.read_csv('data/SaratogaHousesClean.csv')
 y = dataset['price']
 X = dataset.iloc[:, 1:9]
 
