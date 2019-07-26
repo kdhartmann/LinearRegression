@@ -1,1 +1,1 @@
-web: gunicorn lrapi:app
+web: gunicorn app.lrapi:app
