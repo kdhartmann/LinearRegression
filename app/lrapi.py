@@ -294,7 +294,7 @@ def input_graphs():
 		else:
 			feature_string += (f", {elem}")
 	df = pd.DataFrame({
-		# 'numFeat': [len(feature_names)],
+		'numFeat': [len(feature_names)],
 		'mse': [np.mean((cross_val_score(reg, XScaled[feature_names], y, cv=cv, scoring='neg_mean_squared_error'))*-1)],
 		'selectedFeat': [feature_string]
 	})
