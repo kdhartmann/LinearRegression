@@ -27,8 +27,8 @@ def get_results_df_sort(model, features):
 		names.append(elem)
 	for elem in model.coef_:
 		coefs.append(round(elem,2))
-	df['feature'] = names
 	df['coef'] = coefs
+	df['feature'] = names
 	return df.reindex(
 		df.coef.abs().sort_values(ascending = False).index
 	)
