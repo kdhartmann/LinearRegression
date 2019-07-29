@@ -20,7 +20,7 @@ jobs:
           name: Running tests
           command: |
             . venv/bin/activate
-            python tests/test_basic.py
+            python -m pytest
       - store_artifacts:
           path: test-reports/
           destination: python_app
