@@ -190,7 +190,7 @@ def rooms():
 
 
 @app.route('/kfold_mse', methods=['GET'])
-def kfoldmse():
+def kfold_mse():
 	"""Input: none
 	Creates a dataframe of the mse for each fold in k-fold
 	Output: json consisting of 'fold' and 'mse'.
@@ -233,7 +233,7 @@ def lowest_mse_by_count():
 	)
 
 @app.route('/linear_regression_all', methods=['GET'])
-def linearResults():
+def linear_regression_all():
 	"""Input: none
 	Runs a regression with all scaled features and creates dataframe with feature and coefficient
 	Output: json consisting of 'feature' and 'coef'.
@@ -285,7 +285,8 @@ def input_graphs():
 	into a string; elements in 'selectedFeat' are formatted to be a string
 	Output: json consisting of 'numFeat' 'mse' and 'selectedFeat'
 	"""
-	feature_names = request.get_json()
+	features_json = request.get_json()
+	feature_names = features_json['features']
 	feature_string = ''
 	for elem in feature_names:
 		if len(feature_string) == 0:
