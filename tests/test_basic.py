@@ -137,6 +137,13 @@ class TestClass(object):
 			num_feats = [e['numFeat'] for e in r_json]
 			assert num_feats[0] == 2
 
+	def test_optimal_lasso(self):
+		r = self.client.get('/optimal_lasso')
+		r_json = r.get_json()
+
+		assert 'optimalLambda' in r_json[0]
+		assert 'optimalMSE' in r_json[0]
+
 
 	def teardown_method(self):
 		return

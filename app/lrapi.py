@@ -6,7 +6,7 @@ import numpy as np
 from sklearn import metrics
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import LinearRegression, Lasso, Ridge
+from sklearn.linear_model import LinearRegression, Lasso, LassoCV
 from sklearn.model_selection import cross_val_score, train_test_split
 from sklearn.feature_selection import f_regression
 
@@ -147,7 +147,8 @@ lowest_mse_df = pd.DataFrame({
 	'features': features_list
 })
 
-
+lasso_alpha = LassoCV(alphas=np.arange(0.00000001, 1000, .1))
+lasso_alpha.fit(XScaled,y)
 
 ## APIs
 @app.route('/')
@@ -301,6 +302,21 @@ def input_graphs():
 	return jsonify(
 		df.to_dict(orient='records')
 	)
+
+@app.route('/optimal_lasso', methods=['GET'])
+def optimal_lasso():
+	"""Input: none
+	Creates a dataframe for optimal alpha value and the MSE of Lasso regression with alpha value
+	Output: json consisting of 'optimalLambda' and 'optimalMSE'
+	"""
+	df = pd.DataFrame({
+		'optimalLambda': [round(lasso_alpha.alpha_)],
+		'optimalMSE': [np.mean((cross_val_score(Lasso(alpha=lasso_alpha.alpha_), XScaled, y, cv=cv, scoring='neg_mean_squared_error'))*-1)]
+		})
+	return jsonify(
+		df.to_dict(orient='records')
+	)
+
 
 if __name__ == '__main__':
 	app.run(debug=True)
