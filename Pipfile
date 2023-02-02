@@ -23,7 +23,7 @@ Flask = "==1.1.1"
 Flask-Cors = "==3.0.8"
 Jinja2 = "==2.10.1"
 MarkupSafe = "==1.1.1"
-Werkzeug = "==0.15.4"
+Werkzeug = "==0.15.5"
 pytest-cov = "*"
 
 [requires]
